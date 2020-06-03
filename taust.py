@@ -4,6 +4,7 @@ import psutil
 import time
 import json
 import urllib.request
+import urllib.error
 import base64
 import socket
 
@@ -41,8 +42,12 @@ def start(endpoint, auth_token):
             }
         )
 
-        request = urllib.request.Request(endpoint, payload.encode(), headers)
-        response = urllib.request.urlopen(request).read().decode()
+        try:
+            request = urllib.request.Request(endpoint, payload.encode(), headers)
+            response = urllib.request.urlopen(request).read().decode()
+        except urllib.error.URLError as e:
+            # TODO log the error and try to send it to the server
+            print(e)
 
 
 if __name__ == "__main__":
