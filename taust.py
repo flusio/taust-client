@@ -7,6 +7,7 @@ import urllib.request
 import urllib.error
 import base64
 import socket
+import syslog
 
 
 def start(endpoint, auth_token):
@@ -46,8 +47,7 @@ def start(endpoint, auth_token):
             request = urllib.request.Request(endpoint, payload.encode(), headers)
             response = urllib.request.urlopen(request).read().decode()
         except urllib.error.URLError as e:
-            # TODO log the error and try to send it to the server
-            print(e)
+            syslog.syslog(syslog.LOG_ERR, str(e))
 
 
 if __name__ == "__main__":
@@ -63,5 +63,5 @@ if __name__ == "__main__":
     endpoint = env["ENDPOINT"]
     auth_token = env["AUTH_TOKEN"]
 
-    print(f"Starting taust… it will send payloads to {endpoint}")
+    syslog.syslog(f"Starting taust… it will send payloads to {endpoint}")
     start(endpoint, auth_token)
