@@ -10,7 +10,7 @@ import socket
 import syslog
 
 
-def start(endpoint, auth_token):
+def start(endpoint, auth_token, default_disks_to_monitor):
     # First call with interval=None is meaningless, we should drop it
     psutil.cpu_percent(interval=None, percpu=True)
 
@@ -23,15 +23,22 @@ def start(endpoint, auth_token):
     while True:
         time.sleep(10)
 
-        memory = psutil.virtual_memory()
+        if default_disks_to_monitor:
+            disks_to_monitor = default_disks_to_monitor
+        else:
+            disk_partitions = psutil.disk_partitions()
+            disks_to_monitor = [
+                disk_partition.mountpoint for disk_partition in disk_partitions
+            ]
+
         disks = []
-        disk_partitions = psutil.disk_partitions()
-        for disk_partition in disk_partitions:
-            disk_name = disk_partition.mountpoint
+        for disk_name in disks_to_monitor:
             disk_usage = psutil.disk_usage(disk_name)
             disks.append(
                 {"name": disk_name, "total": disk_usage.total, "free": disk_usage.free}
             )
+
+        memory = psutil.virtual_memory()
 
         payload = json.dumps(
             {
@@ -62,6 +69,8 @@ if __name__ == "__main__":
 
     endpoint = env["ENDPOINT"]
     auth_token = env["AUTH_TOKEN"]
+    disks = env.get("DISKS", "")
+    disks = [d.strip() for d in disks.split(",") if d.strip()]
 
     syslog.syslog(f"Starting taust… it will send payloads to {endpoint}")
-    start(endpoint, auth_token)
+    start(endpoint, auth_token, disks)
